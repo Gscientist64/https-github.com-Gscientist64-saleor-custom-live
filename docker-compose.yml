@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Database
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -11,85 +10,45 @@ services:
       POSTGRES_DB: saleor
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U saleor"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # Cache
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # Saleor API (Official)
   api:
     image: saleor/saleor:4.0
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - postgres
+      - redis
     environment:
       DATABASE_URL: postgres://saleor:saleor123@postgres:5432/saleor
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: djfhg8734thg8347gh8347gh8347gh8347ght834  # CHANGE THIS!
+      SECRET_KEY: change-this-to-a-very-secure-key-123456789
       ALLOWED_HOSTS: "*"
-      DEBUG: "false"
       DEFAULT_FROM_EMAIL: admin@yourstore.com
       DEFAULT_CHANNEL_SLUG: default-channel
-      EMAIL_URL: console:
-      CELERY_BROKER_URL: redis://redis:6379/1
     volumes:
       - media_data:/app/media
-    command: >
-      sh -c "
-      python manage.py migrate &&
-      echo 'Creating superuser...' &&
-      echo 'from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser(\"admin@example.com\", \"admin123\") if not User.objects.filter(email=\"admin@example.com\").exists() else print(\"Admin exists\")' | python manage.py shell &&
-      python manage.py runserver 0.0.0.0:8000
-      "
 
-  # Saleor Dashboard (Official)
   dashboard:
     image: saleor/saleor-dashboard:latest
     restart: unless-stopped
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     environment:
       API_URI: http://api:8000/graphql/
       APP_MOUNT_URI: /dashboard/
-      SALEOR_APPS_ENDPOINT: http://api:8000/app-manifest/
 
-  # YOUR CUSTOM REACT STOREFRONT
   storefront:
     build:
       context: ./react-storefront
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_SALEOR_API_URL: http://api:8000/graphql/
-        NEXT_PUBLIC_STOREFRONT_URL: http://localhost:3000
-        NEXT_PUBLIC_DEFAULT_CHANNEL: default-channel
     restart: unless-stopped
     depends_on:
       - api
     environment:
       NEXT_PUBLIC_API_URI: http://api:8000/graphql/
-      NEXT_PUBLIC_APP_MOUNT_URI: /dashboard/
-      NEXT_PUBLIC_STOREFRONT_URL: http://localhost:3000
-      NEXT_PUBLIC_CHECKOUT_APPTUNNEL_URL: http://api:8000
-      # Add your specific env vars from .env files
-      NEXT_PUBLIC_SALEOR_API_URL: http://api:8000/graphql/
-      NEXT_PUBLIC_DEFAULT_CHANNEL: default-channel
-    ports:
-      - "3000:3000"
 
 volumes:
   postgres_data:

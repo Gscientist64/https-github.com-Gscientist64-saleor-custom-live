@@ -34,12 +34,18 @@ services:
       APP_MOUNT_URI: /dashboard/
 
   storefront:
-    build: ./react-storefront
+    build:
+      context: ./react-storefront
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SALEOR_API_URL: http://api:8000/graphql/  # For Docker build
     depends_on:
       - api
     environment:
-      NEXT_PUBLIC_API_URI: http://api:8000/graphql/
+      NEXT_PUBLIC_API_URI: http://api:8000/graphql/  # For runtime
+      NEXT_PUBLIC_SALEOR_API_URL: http://api:8000/graphql/
 
 volumes:
   postgres_data:
   media_data:
+

@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
 
   api:
-    image: saleor/saleor:4.0
+    image: ghcr.io/saleor/saleor:4.0  # CORRECT IMAGE
     restart: unless-stopped
     depends_on:
       - postgres
@@ -32,7 +32,7 @@ services:
       - media_data:/app/media
 
   dashboard:
-    image: saleor/saleor-dashboard:latest
+    image: ghcr.io/saleor/saleor-dashboard:latest  # CORRECT IMAGE
     restart: unless-stopped
     depends_on:
       - api
